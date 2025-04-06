@@ -1,30 +1,30 @@
 # Rapport : Analyse Statique avec LISA
-- `IntervalSafeOverflowDomain`: Domaine non relationnel abstrait des intervalles prenant en compte les dépassements (difficulté : 4)
-- `TwoVariablesInequalityDomain`: Domaine relationnel abstrait de deux variables par inéquation linéaire (difficulté : 4)
+- `IntervalSafeOverflowDomain` : Domaine non relationnel abstrait des intervalles prenant en compte les dépassements (difficulté : 4)
+- `TwoVariablesInequalityDomain` : Domaine relationnel abstrait de deux variables par inéquation linéaire (difficulté : 4)
 - `IntervalSafeOverflowTwoVariablesInequalityCartesianProduct` : Produit cartésien de ces 2 domaines abstraits
 
-# **Domaine non rélationnel**
+# **Domaine non relationnel**
 
-Cette prémière partie explique l'analyse des exemples de code fournis en relation avec les concepts d'opérations arithmétiques, de structures conditionnelles, de boucles, et leur gestion à l'aide du domaine abstrait `IntervalSafeOverflowDomain`. Ce domaine est conçu pour assurer une évaluation sécurisée et correcte des valeurs numériques dans un programme tout en évitant les dépassements d'entiers (overflows).
+Cette première partie explique l'analyse des exemples de code fournis en relation avec les concepts d'opérations arithmétiques, de structures conditionnelles, de boucles, et leur gestion à l'aide du domaine abstrait `IntervalSafeOverflowDomain`. Ce domaine est conçu pour assurer une évaluation sécurisée et correcte des valeurs numériques dans un programme tout en évitant les dépassements d'entiers (overflows).
 
 ---
 
 ### Classe Principale : `IntervalSafeOverflowDomain.java`
 ### Classe Test : `IntervalleSafeOverflowTest.java`
-### Input : `ìntervalleSafeOverflow.imp`
+### Input : `intervalleSafeOverflow.imp`
 
 ---
 ## 1. Opérations arithmétiques dans `basic()`
 ### Code étudié :
-``` 
+```
 basic() {
-    def i = 2147483647;
-    def j = 20;
-    def k = -j;
-    def a = i + j;
-    def s = i - j;
-    def m = i * j;
-    def d = i / j;
+def i = 2147483647;
+def j = 20;
+def k = -j;
+def a = i + j;
+def s = i - j;
+def m = i * j;
+def d = i / j;
 }
 ```
 ### Analyse et explication :
@@ -42,46 +42,45 @@ Le domaine abstrait `IntervalSafeOverflowDomain` est capable d'effectuer ces cal
   - Si une addition, soustraction ou multiplication dépasse les limites de l'intervalle entier (`[-2^31, 2^31-1]`), l'intervalle est ajusté sans provoquer d'erreurs.
 
 - Les fonctions comme `add`, `sub`, `mul` et `div` encapsulent ces comportements et gèrent les valeurs infinies et les cas limites (comme la division par zéro).
-- Les
 
 # Résultat des analyses et des intervalles
 
 Voici les intervalles correspondant aux variables utilisées, calculés après l'analyse abstraite effectuée via le domaine `IntervalSafeOverflowDomain` :
 
-- **a** : `[-2147483629 .. -2147483629]`  
-  Indique que la valeur de `a` est connue avec certitude et est exactement égale à `-2147483629`. Ceci est l'impacte directe de la façon dont nous avons géré l'overflow. Un dépassement de la borne supérieure positive nous renvoie dans la borne inférieure négative.
+- **a** : `[-2147483629 .. -2147483629]`
+  Indique que la valeur de `a` est connue avec certitude et est exactement égale à `-2147483629`. Ceci est l'impact direct de la façon dont nous avons géré l'overflow. Un dépassement de la borne supérieure positive nous renvoie dans la borne inférieure négative.
 
-- **d** : `[107374182 .. 107374182]`  
+- **d** : `[107374182 .. 107374182]`
   Résultat de la division. La valeur est fixe et se situe exactement dans cet intervalle.
 
-- **i** : `[+∞ .. +∞]`  
+- **i** : `[+∞ .. +∞]`
   La variable `i` est considérée comme ayant une valeur infinie positive.
 
-- **j** : `[20 .. 20]`  
+- **j** : `[20 .. 20]`
   La valeur de `j` est connue et fixe, égale à `20`.
 
-- **k** : `[-20 .. -20]`  
+- **k** : `[-20 .. -20]`
   Résultat de la négation de `j`. La valeur est fixe et égale à `-20`.
 
-- **m** : `[-20 .. -20]`  
+- **m** : `[-20 .. -20]`
   Multiplier deux valeurs aboutit ici à cet intervalle constant.
 
-- **s** : `[2147483627 .. 2147483627]`  
+- **s** : `[2147483627 .. 2147483627]`
   Résultat d'une soustraction, où la valeur est fixe et égale au nombre spécifié.
 
 Ces intervalles montrent la précision de l'analyse abstraite, qui détermine les bornes exactes ou approximatives des valeurs des variables à chaque point du programme.
 
 ## 2. **Structure conditionnelle `if` dans `ifstatement()`**
 ### Code étudié :
-``` 
+```
 ifstatement() {
-    def i = 0;
-    if(i > 0)
-        i = 1;
-    else
-        def j = i * 2;
+def i = 0;
+if(i > 0)
+i = 1;
+else
+def j = i * 2;
 }
-``` 
+```
 
 ### Analyse et explication :
 Ce code illustre une structure conditionnelle où la variable `i` est testée dans une condition :
@@ -94,16 +93,16 @@ Le domaine abstrait gère ce type de logique via des **raffinements d'intervalle
   - Dans la branche "true", l'intervalle devient `[1..+∞]`.
   - Dans la branche "false", l'intervalle devient `[-∞..0]`.
 
-- Ces raffinements permettent de réduire les cas possibles pour les variables et d’optimiser l’analyse dans les deux branches. Il est géré dans la méthode `assumeBinary` et fait appel la méthode `lubAux` pour l'opérateur *LeastUpperBound*.
+- Ces raffinements permettent de réduire les cas possibles pour les variables et d’optimiser l’analyse dans les deux branches. Il est géré dans la méthode `assumeBinary` et fait appel à la méthode `lubAux` pour l'opérateur *LeastUpperBound*.
 
 ## 3. **Boucle `while` dans `whilestatement()`**
 ### Code étudié :
 ```
 whilestatement() {
-    def a = -2;
-    def x = 0;
-    while(a >= 1)
-        x = x + 2;
+def a = -2;
+def x = 0;
+while(a >= 1)
+x = x + 2;
 }
 ```
 ### Analyse et explication :
@@ -114,16 +113,16 @@ Le bloc de code utilise une boucle `while` avec la condition `a >= 1`. Cependant
 ### Code étudié (widening) :
 ```
 wideningwhilestatement() {
-      def a = 0;
-      def x = 1;
-      while(a<=10) {
-          x = x * 2;
-          a = a + 1;
-      }
-  }
+def a = 0;
+def x = 1;
+while(a<=10) {
+x = x * 2;
+a = a + 1;
+}
+}
 ```
 - À la différence de l'autre instruction de boucle `while`,
-  celle-ci a eu recours à la méthode `widening`, à partir du 5-ème pour atteindre rapidement un point fixe et garantir la terminaison de la boucle.
+  celle-ci a eu recours à la méthode `widening`, à partir du 5ème pour atteindre rapidement un point fixe et garantir la terminaison de la boucle.
 -  **a** : `[-∞ .. 11]`
 - **x** : `[2 .. +∞]`
 
@@ -136,7 +135,7 @@ Le domaine abstrait gère les boucles en utilisant une **approximation via élar
 ## 4. **Fonctionnement de `IntervalSafeOverflowDomain`**
 La classe `IntervalSafeOverflowDomain` implémente un domaine abstrait basé sur les **intervalles** `[low..high]` pour les variables. Voici ses fonctionnalités principales :
 ### Représentation :
-- Chaque variable est associée à un intervalle, représentant toutes les valeurs possibles qu’elle peut prendre au moment de l’analyse.
+- Chaque variable est associée à un intervalle, représentant toutes les valeurs possibles qu’elle peut prendre au moment de l'analyse.
 - Le domaine prend en charge des bornes infinies positives (`+∞`) ou négatives (`-∞`) pour modéliser des intervalles non bornés.
 
 ### Opérations supportées :
@@ -151,21 +150,20 @@ Les boucles sont analysées à l'aide de techniques d'élargissement pour garant
 - Cela permet de calculer des bornes approximatives même lorsque le nombre d'itérations est inconnu.
 
 ## 5. **Résumé**
-Ce code prend en compte trois concepts fondamentaux dans l'analyse abstraite d'intervalles (domaine non rélationnel) :
+Ce code prend en compte trois concepts fondamentaux dans l'analyse abstraite d'intervalles (domaine non relationnel) :
 1. **Opérations arithmétiques** : `IntervalSafeOverflowDomain` applique strictement des calculs sûrs pour éviter les dépassements (overflow) et gérer les bornes infinies.
 2. **Structures conditionnelles (`if`)** : Le domaine raffine dynamiquement les intervalles dans chaque branche, optimisant la précision de l'analyse.
-3. **Boucles (`while`)** : Grâce à l'élargissement, le domaine garantie une analyse toujours finie, même dans des boucles complexes.
+3. **Boucles (`while`)** : Grâce à l'élargissement, le domaine garantit une analyse toujours finie, même dans des boucles complexes.
 4. **Possible amélioration** : Une amélioration de ce code consistera à traiter le `rand(a,b)`, `for`, `do ... while`.
 
+
+# **Domaine relationnel**
+La deuxième partie consiste à traiter un domaine **TwoVariablesInequalityDomain** qui est un domaine abstrait relationnel dédié aux inéquations linéaires impliquant deux variables. Il est conçu pour analyser les relations linéaires (comme `ax + by ≤ c`) et simplifier ou étendre ces relations dans divers contextes programmatiques. Ce domaine peut être utilisé pour effectuer des analyses statiques sur des programmes afin de suivre des relations complexes entre variables avec précision.
+
 ---
 
-# **Domaine rélationnel**
-La deuxième partie consiste à traite un domaine **TwoVariablesInequalityDomain** est un domaine abstrait relationnel dédié aux inéquations linéaires impliquant deux variables. Il est conçu pour analyser les relations linéaires (comme `ax + by ≤ c`) et simplifier ou étendre ces relations dans divers contextes programmatiques. Ce domaine peut être utilisé pour effectuer des analyses statiques sur des programmes afin de suivre des relations complexes entre variables avec précision.
-
----
-
-## Classe Principale : `TwoVariablesInequalityDomain.java`
-## Classe Test : `TwoVariablesInequalityTest.java`
+### Classe Principale : `TwoVariablesInequalityDomain.java`
+### Classe Test : `TwoVariablesInequalityTest.java`
 ### Input : `TwoVariablesInequality.imp`
 
 ---
@@ -206,11 +204,11 @@ Chaque inéquation suit la forme générale :
 - Exemple : `0*x + 0*y ≤ c` où `c > 0` est considéré comme futile par `isTrivialInequality`.
 2. **Vérification des inéquations mono-variables** :
 - Les inéquations ne traitant qu'une seule variable sont généralement ignorées ou simplifiées via la méthode `isSingleVariableInequality`.
-3. **Supprime les inéquations rédondantes** :
+3. **Suppression des inéquations redondantes** :
 - Si l'environnement contient 2 ou plusieurs inéquations identiques, on ne retient qu'une seule.
-  4.**Transitivité** :
+4. **Transitivité** :
 - Les nouvelles relations sont générées en combinant les inéquations existantes (Ex. transitivité entre `x ≤ 5` et `x + y ≤ 7`).
-  Le **4** et **5** sont combiné dans l'implémentation de `processAndSimplifyLinearInequalities`
+  Le **4** et **5** sont combinés dans l'implémentation de `processAndSimplifyLinearInequalities`.
 
 ---
 
@@ -219,11 +217,11 @@ Chaque inéquation suit la forme générale :
 ### Manipulation de Variables :
 1. **`assign`** :
 - Permet de traiter les affectations dans le programme.
-- Exemple : Si `u = z - 2`, alors une nouvelle inégalité `u - z <= -2` est ajoutée au domaine.
+- Exemple : Si `u = z - 2`, alors une nouvelle inégalité `u - z ≤ -2` est ajoutée au domaine.
 
 2. **Mise à jour avec des Comparaisons** :
 - Traite des expressions binaires de type `BinaryExpression` où l'opérateur est une comparaison (`ComparisonLe`).
-- Simplifie des relations comme `(2*x + 5*y) <= 3`.
+- Simplifie des relations comme `(2*x + 5*y) ≤ 3`.
 
 ### Gestion des Inéquations :
 1. **Combinaisons et Réductions** :
@@ -260,14 +258,14 @@ x = z + 5;
 y = x + 3;
 ```
 Cela se traduit par l'ajout des inéquations suivantes :
-- `x - z <= 5`
-- `y - x <= 3`
+- `x - z ≤ 5`
+- `y - x ≤ 3`
 
 #### 2. Hypothèses Conditionnelles :
 ```java
-if ((1*x + 5*y) <= 4) { ... }
+if ((1*x + 5*y) ≤ 4) { ... }
 ```
-L'analyse gère ce type d'expression en stockant la contrainte `(1*x + 5*y) <= 4` comme une inéquation linéaire.
+L'analyse gère ce type d'expression en stockant la contrainte `(1*x + 5*y) ≤ 4` comme une inéquation linéaire.
 
 #### 3. Simplification via Transitivité :
 Given :
@@ -278,24 +276,25 @@ Les deux relations produisent transitivement une autre inéquation : `x - z ≤ 
 
 ---
 
-## **Résumé**
+## Résumé
 Le domaine `TwoVariablesInequalityDomain` fournit une base puissante pour analyser des systèmes simples d'inéquations linéaires avec deux variables. Il s’intègre bien dans des analyses plus globales grâce à ses capacités de simplification et de fermeture transitives.
-Il est quand même encore possible d'élargir davantage les instructions couvertes par cette implementation (ex: en tenant compte toutes les autres inégalités)
+Il est quand même encore possible d'élargir davantage les instructions couvertes par cette implémentation (ex : en tenant compte de toutes les autres inégalités).
 
 ---
 
 # Produit Cartésien de Domaines
 
-traite de l'analyse basée sur **le produit cartésien** entre deux domaines, :
+Traite de l'analyse basée sur **le produit cartésien** entre deux domaines :
 
 ---
 
 ### Classe Principale : `IntervalSafeOverflowTwoVariablesInequalityCartesianProduct.java`
-### Classe Test : `IntervalSafeOveflowAndLinearInequalityCartesianProductTest.java`
+### Classe Test : `IntervalSafeOverflowAndLinearInequalityCartesianProductTest.java`
 ### Input : `ProduitCartesian.imp`
 
 ---
-```
+
+```markdown
 basic_linear(){
     def x = -1;
     def z = 2;
@@ -317,14 +316,14 @@ Le **produit cartésien** combine ces deux domaines pour analyser des relations 
 ## Fonctionnalité Clé : Réduction via le Produit Cartésien
 La réduction consiste à croiser les informations des deux domaines pour valider ou invalider les relations définies entre les variables. Voici un résumé des étapes principales :
 
-1. ***Extraction des contraintes relationnelles*** :
+1. **Extraction des contraintes relationnelles** :
 - Les inégalités du domaine linéaire sont analysées.
 
-2. ***Projection des intervalles*** :
+2. **Projection des intervalles** :
 - Les bornes des variables issues des intervalles sont multipliées par leurs coefficients dans chaque inégalité.
 - Les bornes minimales (`min`) et maximales (`max`) pour chaque inégalité sont calculées en combinant les projections.
 
-3. ***Vérification des contradictions*** :
+3. **Vérification des contradictions** :
 - Une inégalité est validée si ses valeurs projetées respectent la contrainte (par exemple, `max ≤ c`, où `c` est la constante de l’inégalité).
 - En cas de contradiction, les variables impliquées sont mises sur **TOP**.
 
